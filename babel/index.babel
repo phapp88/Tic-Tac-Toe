@@ -1,0 +1,238 @@
+document.addEventListener('DOMContentLoaded', function() {
+  const app = document.getElementById('app'),
+        wrapper = document.getElementById('wrapper');
+  const homePage = wrapper.innerHTML,
+        gameState = {},
+        minimaxScores = {'X': 1, 'O': -1, 'draw': 0};
+  
+  // Game constructor
+  class Game {
+    constructor(gameState) {
+      const player1 = gameState.player1;
+      const otherPlayer = gameState.numPlayers == 1 ? 'Computer' : 'Player 2';
+      this.players = {};
+      if (player1 == 'X') {
+        this.players['X'] = 'Player 1';
+        this.players['O'] = otherPlayer;
+      } else {
+        this.players['O'] = 'Player 1';
+        this.players['X'] = otherPlayer;
+      }
+    }
+    
+    compMove() {
+      const mmMove = minimax(this.boardArr, this.currentPlayer)[1].reverse();
+      this.move(mmMove.join(', '));
+    }
+    
+    end(result) {
+      result.squares.forEach((loc) => {
+        document.querySelector(`[data-loc="${loc}"]`).classList.add('won');
+      });
+      setTimeout(this.start.bind(this), 1000);
+    }
+    
+    firstMove() {
+      if (this.players.X == 'Computer') {
+        this.move('1, 1');
+      } else {
+        const message = document.createElement('p');
+        message.classList.add('message');
+        message.innerHTML = 'X goes first.';
+        wrapper.insertBefore(message, wrapper.firstChild);
+        setTimeout(() => {
+          message.classList.add('appear');
+          setTimeout(() => {
+            message.classList.remove('appear');
+          }, 1250);
+        }, 250);
+      }
+    }
+    
+    handleClick(e) {
+      e.preventDefault();
+      if (e.target.innerHTML == '' && this.won == false) this.move(e.target.dataset.loc);
+    }
+    
+    move(loc) {
+      const square = document.querySelector(`[data-loc="${loc}"]`);
+      if  (this.currentPlayer == 'O') square.classList.add('O');
+      square.innerHTML = this.currentPlayer;
+      const locArr = loc.split(', ');
+      this.boardArr[locArr[1]][locArr[0]] = this.currentPlayer;
+      if (checkWin(this.boardArr).player != 'none') {
+        this.won = true;
+        this.end(checkWin(this.boardArr));
+      } else {
+        this.currentPlayer = this.currentPlayer == 'X' ? 'O' : 'X';
+        if (this.players[this.currentPlayer] == 'Computer') this.compMove();
+      }
+    }
+    
+    renderBoard() {
+      this.boardArr = [['','',''],['','',''],['','','']];
+      wrapper.innerHTML = '';
+      this.currentPlayer = 'X';
+      const board = document.createElement('table');
+      for (let y = 0; y < 3; y++) {
+        const row = document.createElement('tr');
+        for (let x = 0; x < 3; x++) {
+          const col = document.createElement('td');
+          col.setAttribute('data-loc', `${x}, ${y}`);
+          col.addEventListener('click', (e) => this.handleClick(e));
+          row.appendChild(col);
+        }
+        board.appendChild(row);
+      }
+      const filler = document.createElement('div');
+      filler.setAttribute('id', 'filler');
+      wrapper.appendChild(filler);
+      wrapper.appendChild(board);
+    }
+    
+    start() {
+      this.won = false;
+      this.renderBoard();
+      setTimeout(this.firstMove.bind(this), 250);
+    }
+  }
+  
+  // helper functions
+  const checkWin = (board) => {
+    const players = ['X', 'O'];
+    for (let player of players) {
+      for (let i = 0; i < 3; i++) {
+        if (board[i][0] == player && board[i][1] == player && board[i][2] == player) {
+          return {'player': player, 'squares': [`0, ${i}`, `1, ${i}`, `2, ${i}`]};
+        }
+        if (board[0][i] == player && board[1][i] == player && board[2][i] == player) {
+          return {'player': player, 'squares': [`${i}, 0`, `${i}, 1`, `${i}, 2`]};
+        }
+      }
+      if (board[0][0] == player && board[1][1] == player && board[2][2] == player) {
+        return {'player': player, 'squares': [`0, 0`, `1, 1`, `2, 2`]};
+      }
+      if (board[0][2] == player && board[1][1] == player && board[2][0] == player) {
+        return {'player': player, 'squares': [`2, 0`, `1, 1`, `0, 2`]};
+      }
+    }
+    if (getEmptySquares(board).length === 0) {
+      return {'player': 'draw', 'squares': []};
+    }
+    return {'player': 'none', 'squares': []};
+  }
+  
+  const getEmptySquares = (board) => {
+    const empties = [];
+    for (let y = 0; y < board.length; y++) {
+      for (let x = 0; x < board[y].length; x++) {
+        if (board[y][x] == '') empties.push([y, x]);
+      }
+    }
+    return empties;
+  }
+  
+  const minimax = (board, player) => {
+    if (checkWin(board).player != 'none') {
+      return [minimaxScores[checkWin(board).player], [-1, -1]];
+    } else {
+      const moves = [];
+      for (let square of getEmptySquares(board)) {
+        const boardClone = JSON.parse(JSON.stringify(board));
+        boardClone[square[0]][square[1]] = player;
+        const otherPlayer = player == 'X' ? 'O' : 'X';
+        const score = minimax(boardClone, otherPlayer)[0];
+        if (score == minimaxScores[player]) return [score, square];
+        moves.push([score, square]);
+      }
+      return moves.reduce((a, b) => {
+          return a[0] * minimaxScores[player] > b[0] * minimaxScores[player] ? a : b;
+      });
+    }
+  }
+  
+  // event delegation
+  function handleClicks(e) {
+    e.preventDefault();
+    if (e.target && e.target.nodeName == 'A') {
+      document.documentElement.style.setProperty('--time', '.5s');
+      document.documentElement.style.setProperty('--speed', 'ease-out');
+      const router = {
+        'One Player': loadSides,
+        'Two Player': loadSides,
+        'X' : loadBoard,
+        'O' : loadBoard,
+        '<i class="fa fa-arrow-left"></i> Back': loadHome
+      };
+      const route = e.target.innerHTML;
+      router[route](e);
+    }
+  }
+  
+  // 'page' loaders
+  function loadBoard(e) {
+    gameState['player1'] = e.target.innerHTML;
+    wrapper.classList.add('transparent');
+    wrapper.addEventListener('transitionend', showContent);
+    
+    function showContent(e) {
+      if (e.propertyName != 'opacity') return;
+      wrapper.classList.remove('transparent');
+      wrapper.removeEventListener('transitionend', showContent);
+      const game = new Game(gameState);
+      game.start();
+    }
+  }
+  
+  function loadHome(e) {
+    wrapper.classList.add('transparent');
+    wrapper.addEventListener('transitionend', showContent);
+    
+    function showContent(e) {
+      if (e.propertyName != 'opacity') return;
+      wrapper.classList.remove('transparent');
+      wrapper.removeEventListener('transitionend', showContent);
+      wrapper.innerHTML = homePage;
+    }
+  }
+  
+  function loadSides(e) {
+    let question;
+    if (e.target.innerHTML == 'One Player') {
+      gameState['numPlayers'] = 1;
+      question = 'Would you like to be X or O?'
+    } else {
+      gameState['numPlayers'] = 2;
+      question = 'Player 1: Would you like X or O?'
+    }
+    document.documentElement.style.setProperty('--time', '1.3s');
+    document.documentElement.style.setProperty('--speed', 'ease');
+    wrapper.classList.add('transparent');
+    wrapper.addEventListener('transitionend', showContent);
+    
+    function showContent(e) {
+      if (e.propertyName != 'opacity') return;
+      wrapper.classList.remove('transparent');
+      wrapper.removeEventListener('transitionend', showContent);
+      document.getElementById('question').innerHTML = question;
+      document.getElementById('left').innerHTML = 'X';
+      document.getElementById('left').classList.add('bigger');
+      document.getElementById('leftCol').classList.add('col-xs-3');
+      document.getElementById('leftCol').classList.remove('col-xs-offset-1');
+      document.getElementById('leftCol').classList.add('col-xs-offset-3');
+      document.getElementById('right').innerHTML = 'O';
+      document.getElementById('right').classList.add('bigger');
+      document.getElementById('rightCol').classList.add('col-xs-3');
+      if (!document.getElementById('back')) {
+      const back = document.createElement('a');
+        back.setAttribute('href', '#');
+        back.setAttribute('id', 'back');
+        back.innerHTML = '<i class="fa fa-arrow-left"></i> Back';
+        wrapper.appendChild(back);
+      }
+    }
+  }
+  
+  // MAIN
+  app.addEventListener('click', handleClicks);
+});

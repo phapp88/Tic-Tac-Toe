@@ -1,0 +1,99 @@
+:root {
+  --time: 1.25s; /* transition time variable */
+  --speed: ease; /* transition speed curve variable */
+}
+
+body {
+  background-color: Gainsboro;
+}
+
+#app {
+  background-color: black;
+  border-radius: 4px;
+  width: 400px;
+  height: 450px;
+  margin-top: 100px;
+}
+
+#wrapper {
+  position: relative;
+  transition: opacity var(--time) var(--speed);
+}
+
+.transparent {
+  opacity: 0;
+}
+
+#question {
+  color: rgb(221, 196, 6);
+  font-size: 36px;
+  padding: 50px 50px 10px 50px;
+}
+
+#app a {
+  color: BlueViolet;
+  opacity: 0.7;
+  font-size: 24px;
+  padding: 5px;
+  text-decoration: none;
+}
+
+#app a:hover {
+  opacity: 1;
+  border: 2px dashed BlueViolet;
+  border-radius: 20px;
+}
+
+#app .bigger {
+  font-size: 44px;
+}
+
+#back {
+  font-size: 24px;
+  position: relative;
+  top: 155px;
+}
+
+#app #filler {
+  background-color: black;
+  height: 25px;
+  position: relative;
+}
+
+table {
+  background-color: black;
+  border-style: hidden;
+  position: relative;
+  left: 5px;
+}
+
+td {
+  border: 1px solid white;
+  color: rgb(221, 196, 6);
+  font-size: 72px;
+  height: 135px;
+  width: 120px;
+}
+
+.O {
+  color: BlueViolet;
+}
+
+.won {
+  background-color: gray;
+}
+
+#app .message{
+  background-color: teal;
+  color: white;
+  font-size: 24px;
+  padding: 5px 20px;
+  position: absolute;
+  top: 0;
+  left: 10px;
+  transition: top 0.2s linear;
+}
+
+#app .appear {
+  top: -44px;
+}
